@@ -8,4 +8,6 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o poker-app
 FROM scratch
 WORKDIR /app
 COPY --from=build /app-build/poker-app ./poker-app
-CMD ["./poker-app"]
+ENV POKER_PORT=8080
+EXPOSE 8080
+ENTRYPOINT ["./poker-app"]

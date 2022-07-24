@@ -37,6 +37,7 @@ type RoomsRepository struct {
 
 func (storage *RoomsRepository) AddRoom() (string, *error) {
 	storage.lock()
+	defer storage.unlock()
 	if len(storage.rooms) >= roomsLimit {
 		return "", &ErrLimitExceeded
 	}
@@ -59,7 +60,6 @@ func (storage *RoomsRepository) AddRoom() (string, *error) {
 		PlayersCount: 1,
 	}
 	storage.rooms = append(storage.rooms, room)
-	storage.unlock()
 	return room.ID, nil
 }
 

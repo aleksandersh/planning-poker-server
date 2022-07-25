@@ -31,10 +31,10 @@ func main() {
 	router.POST("/v1/rooms", postRoom)
 	router.GET("/v1/rooms/:room", getRoom)
 	router.DELETE("/v1/rooms/:room", deleteRoom)
-	router.POST("/v1/rooms/:room/games", postGame)
-	router.PATCH("/v1/rooms/:room/games", patchGame)
 	router.POST("/v1/rooms/:room/players", postPlayer)
-	router.PUT("/v1/rooms/:room/cards", putCard)
+	router.POST("/v1/rooms/:room/games", postGame)
+	router.PATCH("/v1/rooms/:room/currentgame", patchGame)
+	router.PUT("/v1/rooms/:room/currentgame/cards", putCard)
 
 	router.Run(":" + port)
 }
@@ -73,6 +73,26 @@ func deleteRoom(c *gin.Context) {
 	}
 }
 
+type playerPostRequest struct {
+	Name string `json:"name"`
+}
+
+type playerPostResponse struct {
+	AccessToken string `json:"access_token"`
+}
+
+func postPlayer(c *gin.Context) {
+	roomID := getRoomID(c)
+	request := playerPostRequest{Name: ""}
+	c.ShouldBindJSON(&request)
+	session, err := storage.AddPlayer(roomID, request.Name)
+	if handleDataError(c, err) {
+		return
+	}
+	response := playerPostResponse{AccessToken: session.ID}
+	c.JSON(http.StatusCreated, response)
+}
+
 type gamePatchRequest struct {
 	Name     *string `json:"name"`
 	Complete bool    `json:"complete"`
@@ -105,26 +125,6 @@ func postGame(c *gin.Context) {
 	if !handleDataError(c, err) {
 		c.AbortWithStatus(http.StatusCreated)
 	}
-}
-
-type playerPostRequest struct {
-	Name string `json:"name"`
-}
-
-type playerPostResponse struct {
-	AccessToken string `json:"access_token"`
-}
-
-func postPlayer(c *gin.Context) {
-	roomID := getRoomID(c)
-	request := playerPostRequest{Name: ""}
-	c.ShouldBindJSON(&request)
-	session, err := storage.AddPlayer(roomID, request.Name)
-	if handleDataError(c, err) {
-		return
-	}
-	response := playerPostResponse{AccessToken: session.ID}
-	c.JSON(http.StatusCreated, response)
 }
 
 type roomDTO struct {

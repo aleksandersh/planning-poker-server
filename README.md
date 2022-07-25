@@ -49,13 +49,16 @@ _authorized_
 1. observe the room state
 1. post cards
 
-## Scripts
+## Launch
 
-Sample shortcuts for API
+The simpliest way to run and test application is using docker and sample scripts for API
 
 Usage
 ``` bash
+docker build -t planning-poker-app .
+docker run -dp 3000:8080 planning-poker-app
 cd ./scripts
+export POKER_HOST=localhost:3000
 create_room.sh
 export POKER_ROOM="<room_id>"
 create_player.sh

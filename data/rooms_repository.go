@@ -58,7 +58,7 @@ func (storage *RoomsRepository) AddRoom() (string, *error) {
 		LastActivity: now,
 		Sessions:     []entity.Session{},
 		Games:        []entity.Game{game},
-		PlayersCount: 1,
+		PlayersCount: 0,
 	}
 	storage.rooms = append(storage.rooms, room)
 	return room.ID, nil
@@ -182,9 +182,9 @@ func (storage *RoomsRepository) AddPlayer(roomID string, name string) (*entity.S
 	playerSession := entity.Session{ID: generateID(), LastActivity: now, Player: player}
 	room.Sessions = append(room.Sessions, playerSession)
 	if playersCount == math.MaxInt {
-		room.PlayersCount = room.PlayersCount + 1
-	} else {
 		room.PlayersCount = 0
+	} else {
+		room.PlayersCount = room.PlayersCount + 1
 	}
 	storage.updateRoomByIndex(*room, idx)
 	return &playerSession, nil

@@ -15,6 +15,7 @@ import (
 const (
 	roomsLimit          = 20
 	sessionsLimit       = 60
+	gamesLimit          = 200
 	roomInactiveTime    = 60 * time.Minute
 	sessionInactiveTime = 10 * time.Minute
 )
@@ -195,6 +196,9 @@ func (storage *RoomsRepository) AddGame(roomID string, sessionID string, name *s
 	idx, room, err := storage.requireRoomForOwner(roomID, sessionID)
 	if err != nil {
 		return err
+	}
+	if len(room.Games) >= gamesLimit {
+		return &ErrLimitExceeded
 	}
 	gameName := ""
 	if name != nil {

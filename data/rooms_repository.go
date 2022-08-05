@@ -17,7 +17,7 @@ const (
 	sessionsLimit       = 60
 	gamesLimit          = 200
 	roomInactiveTime    = 60 * time.Minute
-	sessionInactiveTime = 10 * time.Minute
+	sessionInactiveTime = 10 * time.Second
 )
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 

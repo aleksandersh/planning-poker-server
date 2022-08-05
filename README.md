@@ -66,3 +66,7 @@ export POKER_SESSION="<access_token>"
 get_room.sh
 ...
 ```
+
+## Environment variables
+- `POKER_PORT` (required) - port of application
+- `POKER_MODE` (optional) - `debug` enables additional logs

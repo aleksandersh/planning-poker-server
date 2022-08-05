@@ -14,17 +14,28 @@ import (
 )
 
 const (
+	envPort      = "POKER_PORT"
+	envMode      = "POKER_MODE"
+	envModeDebug = "debug"
+)
+
+const (
 	roomActivityCheckInterval = 10 * time.Second
 )
 
 var storage data.RoomsRepository
 
 func main() {
-	port := os.Getenv("POKER_PORT")
-
+	port := os.Getenv(envPort)
 	if port == "" {
-		log.Fatal("variable $POKER_PORT must be set")
+		log.Fatal("variable $" + envPort + " must be set")
 	}
+
+	isDebug := os.Getenv(envMode) == envModeDebug
+	if !isDebug {
+		gin.SetMode(gin.ReleaseMode)
+	}
+	log.Printf("Start poker app (port=%s, isDebug=%t)", port, isDebug)
 
 	router := gin.Default()
 

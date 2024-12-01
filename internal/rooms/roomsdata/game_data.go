@@ -3,10 +3,10 @@ package roomsdata
 import (
 	"slices"
 
-	"aleksandersh.github.io/planning-poker-server/internal/rooms/roomsdomain/roomsmodel"
+	"aleksandersh.github.io/planning-poker-server/internal/rooms"
 )
 
-func estimateGame(game roomsmodel.Game) roomsmodel.Game {
+func estimateGame(game rooms.Game) rooms.Game {
 	suggested := 0
 	sum := 0
 	count := 0
@@ -37,8 +37,8 @@ func estimateGame(game roomsmodel.Game) roomsmodel.Game {
 	return game
 }
 
-func putUserCard(cards []roomsmodel.Card, card roomsmodel.Card) []roomsmodel.Card {
-	idx := slices.IndexFunc(cards, func(c roomsmodel.Card) bool {
+func putUserCard(cards []rooms.Card, card rooms.Card) []rooms.Card {
+	idx := slices.IndexFunc(cards, func(c rooms.Card) bool {
 		return c.Player.UserID == card.Player.UserID
 	})
 	if idx > 0 {
@@ -49,8 +49,8 @@ func putUserCard(cards []roomsmodel.Card, card roomsmodel.Card) []roomsmodel.Car
 	return cards
 }
 
-func dropUserCard(cards []roomsmodel.Card, userID string) []roomsmodel.Card {
-	return slices.DeleteFunc(cards, func(card roomsmodel.Card) bool {
+func dropUserCard(cards []rooms.Card, userID string) []rooms.Card {
+	return slices.DeleteFunc(cards, func(card rooms.Card) bool {
 		return card.Player.UserID == userID
 	})
 }

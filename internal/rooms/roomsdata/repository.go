@@ -4,20 +4,17 @@ import (
 	"log"
 	"strconv"
 	"sync"
-	"time"
 
-	"aleksandersh.github.io/planning-poker-server/internal/rooms/roomsdomain/roomsmodel"
-	"aleksandersh.github.io/planning-poker-server/internal/users/usersdomain/usersmodel"
+	"aleksandersh.github.io/planning-poker-server/internal/rooms"
+	"aleksandersh.github.io/planning-poker-server/internal/users"
 	"aleksandersh.github.io/planning-poker-server/internal/utils/idutils"
 )
 
 const (
-	roomsLimit         = 300
-	playersLimit       = 300
-	sessionsLimit      = 60
-	gamesLimit         = 200
-	roomInactiveTime   = 1 * time.Hour
-	playerInactiveTime = 10 * time.Second
+	roomsLimit    = 300
+	playersLimit  = 300
+	sessionsLimit = 60
+	gamesLimit    = 200
 )
 
 var playerColors = []string{
@@ -32,33 +29,33 @@ var playerColors = []string{
 
 type Repository struct {
 	mutex sync.RWMutex
-	rooms map[string]roomsmodel.Room
-	games map[string]roomsmodel.Game
+	rooms map[string]rooms.Room
+	games map[string]rooms.Game
 }
 
 func NewRepo() *Repository {
 	return &Repository{
-		rooms: make(map[string]roomsmodel.Room),
-		games: make(map[string]roomsmodel.Game),
+		rooms: make(map[string]rooms.Room),
+		games: make(map[string]rooms.Game),
 	}
 }
 
-func (r *Repository) Create(user usersmodel.User, name string, inviteCodeRequired bool) (roomsmodel.Room, error) {
+func (r *Repository) Create(user users.User, name string, inviteCodeRequired bool) (rooms.Room, error) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
 	if len(r.rooms) >= roomsLimit {
-		return roomsmodel.Room{}, roomsmodel.ErrLimitExceeded
+		return rooms.Room{}, rooms.ErrLimitExceeded
 	}
 
 	id := r.createRoomID()
-	room := roomsmodel.Room{
+	room := rooms.Room{
 		ID:                 id,
 		Commit:             idutils.GenerateID(),
 		Name:               name,
 		InviteCodeRequired: inviteCodeRequired,
 		Owner:              user.ID,
-		Players:            []roomsmodel.Player{newPlayer(user, 0)},
+		Players:            []rooms.Player{newPlayer(user, 0)},
 		Games:              []string{},
 		VisitorsCount:      1,
 	}
@@ -66,13 +63,13 @@ func (r *Repository) Create(user usersmodel.User, name string, inviteCodeRequire
 	return room, nil
 }
 
-func (r *Repository) Get(userID string, roomID string) (roomsmodel.Room, error) {
+func (r *Repository) Get(userID string, roomID string) (rooms.Room, error) {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
 
 	room, contains := r.rooms[roomID]
 	if !contains {
-		return roomsmodel.Room{}, roomsmodel.ErrRoomNotFound
+		return rooms.Room{}, rooms.ErrRoomNotFound
 	}
 	return room, nil
 }
@@ -90,16 +87,16 @@ func (r *Repository) Delete(userID string, roomID string) error {
 	return nil
 }
 
-func (r *Repository) Join(user usersmodel.User, roomID string, inviteCode string) (roomsmodel.Room, error) {
+func (r *Repository) Join(user users.User, roomID string, inviteCode string) (rooms.Room, error) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
 	room, contains := r.rooms[roomID]
 	if !contains {
-		return roomsmodel.Room{}, roomsmodel.ErrRoomNotFound
+		return rooms.Room{}, rooms.ErrRoomNotFound
 	}
 	if isPlayerExists(room, user.ID) || !isInviteCodeAccepted(room, inviteCode) {
-		return roomsmodel.Room{}, roomsmodel.ErrForbidden
+		return rooms.Room{}, rooms.ErrForbidden
 	}
 
 	room.Players = append(room.Players, newPlayer(user, room.VisitorsCount))
@@ -109,13 +106,17 @@ func (r *Repository) Join(user usersmodel.User, roomID string, inviteCode string
 	return room, nil
 }
 
-func (r *Repository) AddGame(userID string, roomID string, game roomsmodel.Game) (roomsmodel.Game, error) {
+func (r *Repository) AddGame(userID string, roomID string, game rooms.Game) (rooms.Game, error) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
 	room, err := r.getOwnedRoom(userID, roomID)
 	if err != nil {
-		return roomsmodel.Game{}, err
+		return rooms.Game{}, err
+	}
+
+	if len(room.Games) >= gamesLimit {
+		return rooms.Game{}, rooms.ErrLimitExceeded
 	}
 
 	game.ID = r.createGameID()
@@ -132,7 +133,7 @@ func (r *Repository) AddGame(userID string, roomID string, game roomsmodel.Game)
 	return game, nil
 }
 
-func (r *Repository) CompleteGame(userID string, gameID string) (roomsmodel.Game, error) {
+func (r *Repository) CompleteGame(userID string, gameID string) (rooms.Game, error) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
@@ -141,12 +142,12 @@ func (r *Repository) CompleteGame(userID string, gameID string) (roomsmodel.Game
 		return game, err
 	}
 
-	if game.Status == roomsmodel.GameStatusCompleted {
+	if game.Status == rooms.GameStatusCompleted {
 		return game, nil
 	}
 
 	game = estimateGame(game)
-	game.Status = roomsmodel.GameStatusCompleted
+	game.Status = rooms.GameStatusCompleted
 	r.games[game.ID] = game
 
 	r.saveRoom(room)
@@ -154,7 +155,7 @@ func (r *Repository) CompleteGame(userID string, gameID string) (roomsmodel.Game
 	return game, nil
 }
 
-func (r *Repository) ResetGame(userID string, gameID string) (roomsmodel.Game, error) {
+func (r *Repository) ResetGame(userID string, gameID string) (rooms.Game, error) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
@@ -164,10 +165,10 @@ func (r *Repository) ResetGame(userID string, gameID string) (roomsmodel.Game, e
 	}
 
 	game = estimateGame(game)
-	game.Status = roomsmodel.GameStatusActive
+	game.Status = rooms.GameStatusActive
 	game.MaxScore = 0
 	game.AverageScore = 0
-	game.Cards = []roomsmodel.Card{}
+	game.Cards = []rooms.Card{}
 	r.games[game.ID] = game
 
 	r.saveRoom(room)
@@ -175,7 +176,7 @@ func (r *Repository) ResetGame(userID string, gameID string) (roomsmodel.Game, e
 	return game, nil
 }
 
-func (r *Repository) SendCard(userID string, gameID string, score int) (roomsmodel.Game, error) {
+func (r *Repository) SendCard(userID string, gameID string, score int) (rooms.Game, error) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
@@ -184,8 +185,8 @@ func (r *Repository) SendCard(userID string, gameID string, score int) (roomsmod
 		return game, err
 	}
 
-	if game.Status == roomsmodel.GameStatusCompleted {
-		return game, roomsmodel.ErrIllegalGameStatus
+	if game.Status == rooms.GameStatusCompleted {
+		return game, rooms.ErrIllegalGameStatus
 	}
 
 	player, err := getPlayer(room, userID)
@@ -193,7 +194,7 @@ func (r *Repository) SendCard(userID string, gameID string, score int) (roomsmod
 		return game, err
 	}
 
-	game.Cards = putUserCard(game.Cards, roomsmodel.Card{Player: player, Score: score})
+	game.Cards = putUserCard(game.Cards, rooms.Card{Player: player, Score: score})
 	r.games[game.ID] = game
 
 	r.saveRoom(room)
@@ -201,7 +202,7 @@ func (r *Repository) SendCard(userID string, gameID string, score int) (roomsmod
 	return game, nil
 }
 
-func (r *Repository) DropCard(userID string, gameID string) (roomsmodel.Game, error) {
+func (r *Repository) DropCard(userID string, gameID string) (rooms.Game, error) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
@@ -210,8 +211,8 @@ func (r *Repository) DropCard(userID string, gameID string) (roomsmodel.Game, er
 		return game, err
 	}
 
-	if game.Status == roomsmodel.GameStatusCompleted {
-		return game, roomsmodel.ErrIllegalGameStatus
+	if game.Status == rooms.GameStatusCompleted {
+		return game, rooms.ErrIllegalGameStatus
 	}
 
 	game.Cards = dropUserCard(game.Cards, userID)
@@ -222,16 +223,16 @@ func (r *Repository) DropCard(userID string, gameID string) (roomsmodel.Game, er
 	return game, nil
 }
 
-func (r *Repository) GetRoomState(userID string, roomID string) (roomsmodel.RoomState, error) {
+func (r *Repository) GetRoomState(userID string, roomID string) (rooms.RoomState, error) {
 	room, contains := r.rooms[roomID]
 	if !contains {
-		return roomsmodel.RoomState{}, roomsmodel.ErrRoomNotFound
+		return rooms.RoomState{}, rooms.ErrRoomNotFound
 	}
 	if !isPlayerExists(room, userID) {
-		return roomsmodel.RoomState{}, roomsmodel.ErrForbidden
+		return rooms.RoomState{}, rooms.ErrForbidden
 	}
 
-	games := make([]roomsmodel.Game, 0, len(room.Games))
+	games := make([]rooms.Game, 0, len(room.Games))
 	for _, gameID := range room.Games {
 		game, contains := r.games[gameID]
 		if contains {
@@ -239,7 +240,7 @@ func (r *Repository) GetRoomState(userID string, roomID string) (roomsmodel.Room
 		}
 	}
 
-	return roomsmodel.RoomState{Room: room, Games: games}, nil
+	return rooms.RoomState{Room: room, Games: games}, nil
 }
 
 func (r *Repository) createRoomID() string {
@@ -278,43 +279,43 @@ func (r *Repository) isGameExists(id string) bool {
 	return contains
 }
 
-func (r *Repository) getOwnedRoom(userID string, roomID string) (roomsmodel.Room, error) {
+func (r *Repository) getOwnedRoom(userID string, roomID string) (rooms.Room, error) {
 	room, contains := r.rooms[roomID]
 	if !contains {
-		return roomsmodel.Room{}, roomsmodel.ErrRoomNotFound
+		return rooms.Room{}, rooms.ErrRoomNotFound
 	}
 	if room.Owner != userID {
-		return roomsmodel.Room{}, roomsmodel.ErrForbidden
+		return rooms.Room{}, rooms.ErrForbidden
 	}
 	return room, nil
 }
 
-func newPlayer(user usersmodel.User, index int) roomsmodel.Player {
+func newPlayer(user users.User, index int) rooms.Player {
 	name := user.Name
 	if len(name) == 0 {
 		name = "Player " + strconv.Itoa(index+1)
 	}
 
 	color := playerColors[index%len(playerColors)]
-	return roomsmodel.Player{UserID: user.ID, Name: name, Color: color}
+	return rooms.Player{UserID: user.ID, Name: name, Color: color}
 }
 
-func (r *Repository) getRoomAndGame(userID string, gameID string) (roomsmodel.Room, roomsmodel.Game, error) {
+func (r *Repository) getRoomAndGame(userID string, gameID string) (rooms.Room, rooms.Game, error) {
 	game, contains := r.games[gameID]
 	if !contains {
-		return roomsmodel.Room{}, roomsmodel.Game{}, roomsmodel.ErrGameNotFound
+		return rooms.Room{}, rooms.Game{}, rooms.ErrGameNotFound
 	}
 	room, contains := r.rooms[game.RoomID]
 	if !contains {
-		return roomsmodel.Room{}, roomsmodel.Game{}, roomsmodel.ErrGameNotFound
+		return rooms.Room{}, rooms.Game{}, rooms.ErrGameNotFound
 	}
 	if room.Owner != userID {
-		return roomsmodel.Room{}, roomsmodel.Game{}, roomsmodel.ErrForbidden
+		return rooms.Room{}, rooms.Game{}, rooms.ErrForbidden
 	}
 	return room, game, nil
 }
 
-func (r *Repository) saveRoom(room roomsmodel.Room) {
+func (r *Repository) saveRoom(room rooms.Room) {
 	room.Commit = idutils.GenerateID()
 	r.rooms[room.ID] = room
 }

@@ -1,4 +1,4 @@
-package roomsmodel
+package rooms
 
 type Player struct {
 	UserID string

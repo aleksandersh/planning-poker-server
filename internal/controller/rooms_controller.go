@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
+	"aleksandersh.github.io/planning-poker-server/internal/rooms"
 	"aleksandersh.github.io/planning-poker-server/internal/rooms/roomsdomain"
-	"aleksandersh.github.io/planning-poker-server/internal/rooms/roomsdomain/roomsmodel"
 	"github.com/gin-gonic/gin"
 )
 
@@ -173,12 +173,7 @@ func (rc *RoomsController) GetState(c *gin.Context) {
 
 	players := make([]playerDto, 0, len(roomState.Room.Players))
 	for _, player := range roomState.Room.Players {
-		dto := playerDto{
-			ID:    player.UserID,
-			Name:  player.Name,
-			Color: player.Color,
-		}
-		players = append(players, dto)
+		players = append(players, mapPlayerToDto(player))
 	}
 	var currentGame *currentGameDto = nil
 	if len(roomState.Games) > 0 {
@@ -187,18 +182,13 @@ func (rc *RoomsController) GetState(c *gin.Context) {
 		averageScore := 0
 		isCardsRevealed := false
 		cards := []cardDto{}
-		if game.Status == roomsmodel.GameStatusCompleted {
+		if game.Status == rooms.GameStatusCompleted {
 			maxScore = game.MaxScore
 			averageScore = game.AverageScore
 			isCardsRevealed = true
 			cards = make([]cardDto, 0, len(game.Cards))
 			for _, card := range game.Cards {
-				player := playerDto{
-					ID:    card.Player.UserID,
-					Name:  card.Player.Name,
-					Color: card.Player.Color,
-				}
-				cards = append(cards, cardDto{Score: card.Score, Player: player})
+				cards = append(cards, cardDto{Score: card.Score, Player: mapPlayerToDto(card.Player)})
 			}
 		}
 		currentGame = &currentGameDto{
@@ -246,4 +236,12 @@ func requireRoomIDParam(c *gin.Context) (roomID string, ok bool) {
 		ok = false
 	}
 	return
+}
+
+func mapPlayerToDto(player rooms.Player) playerDto {
+	return playerDto{
+		ID:    player.UserID,
+		Name:  player.Name,
+		Color: player.Color,
+	}
 }

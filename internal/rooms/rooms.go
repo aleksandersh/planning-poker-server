@@ -1,4 +1,4 @@
-package roomsmodel
+package rooms
 
 import (
 	"errors"

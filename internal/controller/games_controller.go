@@ -3,8 +3,8 @@ package controller
 import (
 	"net/http"
 
+	"aleksandersh.github.io/planning-poker-server/internal/rooms"
 	"aleksandersh.github.io/planning-poker-server/internal/rooms/roomsdomain"
-	"aleksandersh.github.io/planning-poker-server/internal/rooms/roomsdomain/roomsmodel"
 	"github.com/gin-gonic/gin"
 )
 
@@ -48,7 +48,7 @@ func (gc *GamesController) Post(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, createGameDto(game))
+	c.JSON(http.StatusCreated, mapGameToDto(game))
 }
 
 func (gc *GamesController) Complete(c *gin.Context) {
@@ -64,7 +64,7 @@ func (gc *GamesController) Complete(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, createGameDto(game))
+	c.JSON(http.StatusOK, mapGameToDto(game))
 }
 
 func (gc *GamesController) Reset(c *gin.Context) {
@@ -80,7 +80,7 @@ func (gc *GamesController) Reset(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, createGameDto(game))
+	c.JSON(http.StatusOK, mapGameToDto(game))
 }
 
 func (gc *GamesController) SendCard(c *gin.Context) {
@@ -100,7 +100,7 @@ func (gc *GamesController) SendCard(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, createGameDto(game))
+	c.JSON(http.StatusOK, mapGameToDto(game))
 }
 
 func (gc *GamesController) DropCard(c *gin.Context) {
@@ -117,10 +117,10 @@ func (gc *GamesController) DropCard(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, createGameDto(game))
+	c.JSON(http.StatusOK, mapGameToDto(game))
 }
 
-func createGameDto(game roomsmodel.Game) gameDto {
+func mapGameToDto(game rooms.Game) gameDto {
 	return gameDto{
 		ID:     game.ID,
 		RoomID: game.RoomID,

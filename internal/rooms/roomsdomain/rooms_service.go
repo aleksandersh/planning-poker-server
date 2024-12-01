@@ -2,9 +2,9 @@ package roomsdomain
 
 import (
 	"aleksandersh.github.io/planning-poker-server/internal/activity/activitydata"
+	"aleksandersh.github.io/planning-poker-server/internal/rooms"
 	"aleksandersh.github.io/planning-poker-server/internal/rooms/roomsdata"
-	"aleksandersh.github.io/planning-poker-server/internal/rooms/roomsdomain/roomsmodel"
-	"aleksandersh.github.io/planning-poker-server/internal/users/usersdomain/usersmodel"
+	"aleksandersh.github.io/planning-poker-server/internal/users"
 )
 
 type RoomsService struct {
@@ -16,7 +16,7 @@ func NewRoomsService(roomsRepository *roomsdata.Repository, activityRepository *
 	return &RoomsService{roomsRepository: roomsRepository, activityRepository: activityRepository}
 }
 
-func (rs *RoomsService) Create(user usersmodel.User, name string, inviteCodeRequired bool) (roomsmodel.Room, error) {
+func (rs *RoomsService) Create(user users.User, name string, inviteCodeRequired bool) (rooms.Room, error) {
 	room, err := rs.roomsRepository.Create(user, name, inviteCodeRequired)
 	if err != nil {
 		return room, err
@@ -28,7 +28,7 @@ func (rs *RoomsService) Create(user usersmodel.User, name string, inviteCodeRequ
 	return room, err
 }
 
-func (rs *RoomsService) Get(userID string, roomID string) (roomsmodel.Room, error) {
+func (rs *RoomsService) Get(userID string, roomID string) (rooms.Room, error) {
 	room, err := rs.roomsRepository.Get(userID, roomID)
 	if err == nil {
 		rs.activityRepository.AddPlayerActivity(roomID, userID)
@@ -45,7 +45,7 @@ func (rs *RoomsService) Delete(userID string, roomID string) error {
 	return err
 }
 
-func (rs *RoomsService) Join(user usersmodel.User, roomID string, inviteCode string) (roomsmodel.Room, error) {
+func (rs *RoomsService) Join(user users.User, roomID string, inviteCode string) (rooms.Room, error) {
 	room, err := rs.roomsRepository.Join(user, roomID, inviteCode)
 	if err == nil {
 		rs.activityRepository.AddPlayerActivity(roomID, user.ID)
@@ -53,7 +53,7 @@ func (rs *RoomsService) Join(user usersmodel.User, roomID string, inviteCode str
 	return room, err
 }
 
-func (rs *RoomsService) GetState(userID string, roomID string) (roomsmodel.RoomState, error) {
+func (rs *RoomsService) GetState(userID string, roomID string) (rooms.RoomState, error) {
 	roomState, err := rs.roomsRepository.GetRoomState(userID, roomID)
 	if err == nil {
 		rs.activityRepository.AddPlayerActivity(roomID, userID)

@@ -3,7 +3,7 @@ package roomsdata
 import (
 	"math/rand"
 
-	"aleksandersh.github.io/planning-poker-server/internal/rooms/roomsdomain/roomsmodel"
+	"aleksandersh.github.io/planning-poker-server/internal/rooms"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyz"
@@ -16,7 +16,7 @@ func generateRoomID() string {
 	return string(b)
 }
 
-func isPlayerExists(room roomsmodel.Room, userID string) bool {
+func isPlayerExists(room rooms.Room, userID string) bool {
 	for _, player := range room.Players {
 		if player.UserID == userID {
 			return true
@@ -25,7 +25,7 @@ func isPlayerExists(room roomsmodel.Room, userID string) bool {
 	return false
 }
 
-func isInviteCodeAccepted(room roomsmodel.Room, inviteCode string) bool {
+func isInviteCodeAccepted(room rooms.Room, inviteCode string) bool {
 	if room.InviteCodeRequired {
 		for _, code := range room.InviteCodes {
 			if code.Code == inviteCode {
@@ -36,11 +36,11 @@ func isInviteCodeAccepted(room roomsmodel.Room, inviteCode string) bool {
 	return false
 }
 
-func getPlayer(room roomsmodel.Room, userID string) (roomsmodel.Player, error) {
+func getPlayer(room rooms.Room, userID string) (rooms.Player, error) {
 	for _, player := range room.Players {
 		if player.UserID == userID {
 			return player, nil
 		}
 	}
-	return roomsmodel.Player{}, roomsmodel.ErrForbidden
+	return rooms.Player{}, rooms.ErrForbidden
 }

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"sync"
 
-	"aleksandersh.github.io/planning-poker-server/internal/users/usersdomain/usersmodel"
+	"aleksandersh.github.io/planning-poker-server/internal/users"
 	"aleksandersh.github.io/planning-poker-server/internal/utils/idutils"
 )
 
@@ -14,18 +14,18 @@ var (
 
 type Repository struct {
 	mutex        sync.RWMutex
-	users        map[string]usersmodel.User
+	users        map[string]users.User
 	accessTokens map[string]string
 }
 
 func NewRepo() *Repository {
 	return &Repository{
-		users:        make(map[string]usersmodel.User),
+		users:        make(map[string]users.User),
 		accessTokens: make(map[string]string),
 	}
 }
 
-func (r *Repository) CreateUser(user usersmodel.User) usersmodel.User {
+func (r *Repository) CreateUser(user users.User) users.User {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
@@ -52,18 +52,18 @@ func (r *Repository) CreateToken(userID string) string {
 	return accessToken
 }
 
-func (r *Repository) ResolveUserByAccessToken(accessToken string) (usersmodel.User, error) {
+func (r *Repository) ResolveUserByAccessToken(accessToken string) (users.User, error) {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
 
 	userID, contains := r.accessTokens[accessToken]
 	if !contains {
-		return usersmodel.User{}, ErrAccessTokenNotFound
+		return users.User{}, ErrAccessTokenNotFound
 	}
 
 	user, contains := r.users[userID]
 	if !contains {
-		return usersmodel.User{}, ErrAccessTokenNotFound
+		return users.User{}, ErrAccessTokenNotFound
 	}
 
 	return user, nil

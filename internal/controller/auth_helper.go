@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
+	"aleksandersh.github.io/planning-poker-server/internal/users"
 	"aleksandersh.github.io/planning-poker-server/internal/users/usersdomain"
-	"aleksandersh.github.io/planning-poker-server/internal/users/usersdomain/usersmodel"
 	"github.com/gin-gonic/gin"
 )
 
@@ -24,19 +24,19 @@ func NewAuthHelper(usersService *usersdomain.Service) *AuthHelper {
 	return &AuthHelper{usersService: usersService}
 }
 
-func (h *AuthHelper) ResolveUser(c *gin.Context) (usersmodel.User, bool) {
+func (h *AuthHelper) ResolveUser(c *gin.Context) (users.User, bool) {
 	accessToken, err := h.getAccessToken(c)
 	if err != nil {
 		log.Println(fmt.Errorf("authorization failed: %w", err))
 		c.AbortWithStatus(http.StatusUnauthorized)
-		return usersmodel.User{}, false
+		return users.User{}, false
 	}
 
 	user, err := h.usersService.ResolveUserByAccessToken(accessToken)
 	if err != nil {
 		log.Println(fmt.Errorf("authorization failed: %w", err))
 		c.AbortWithStatus(http.StatusUnauthorized)
-		return usersmodel.User{}, false
+		return users.User{}, false
 	}
 
 	return user, true
